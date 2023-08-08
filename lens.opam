@@ -1,0 +1,22 @@
+opam-version: "2.0"
+name: "lens"
+synopsis: "Port of a subset of the Haskell lens library to OCaml, using modular implicits"
+version: "dev"
+maintainer: "yallop@gmail.com"
+authors: ["Patrick Reader", "Daniel Vlasits"]
+homepage: "https://github.com/modular-implicits/lens"
+dev-repo: "git+https://github.com/modular-implicits/lens.git"
+bug-reports: "http://github.com/modular-implicits/lens/issues"
+license: "BSD-3-Clause"
+build: [
+  ["dune" "subst"] {dev}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]
+
+depends: [
+   "dune" {build}
+   "ocaml-variants"
+     { = "4.02.1+modular-implicits" | = "4.02.1+modular-implicits-ber" }
+]
+
