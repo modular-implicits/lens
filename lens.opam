@@ -3,7 +3,7 @@ name: "lens"
 synopsis: "Port of a subset of the Haskell lens library to OCaml, using modular implicits"
 version: "dev"
 maintainer: "yallop@gmail.com"
-authors: ["Patrick Reader", "Daniel Vlasits"]
+authors: ["Patrick Reader" "Daniel Vlasits"]
 homepage: "https://github.com/modular-implicits/lens"
 dev-repo: "git+https://github.com/modular-implicits/lens.git"
 bug-reports: "http://github.com/modular-implicits/lens/issues"
