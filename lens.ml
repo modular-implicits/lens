@@ -10,32 +10,32 @@ type ('s, 't, 'a, 'b) traversal = {F : Applicative} -> ('a -> 'b F.t) -> ('s -> 
 type ('a, 's, 'x) getter = ('x -> ('a, 'x) const) -> ('s -> ('a, 's) const)
 
 module type Getter = sig
-  type ('s, 't, 'a, 'b) t
   type a
-  val convert : ('s, 's, a, a) t -> (a, 's, a) getter
+  type 's t
+  val convert : 's t -> (a, 's, a) getter
 end
 
 implicit module Lens_Getter {A: Any} : Getter
-  with type ('s, 't, 'a, 'b) t = {F: Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
-  and type a = A.t_for_any
+  with type a = A.t_for_any
+  and type 's t = {F: Functor} -> (A.t_for_any -> A.t_for_any F.t) -> ('s -> 's F.t)
 = struct
-  type ('s, 't, 'a, 'b) t = {F: Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
   type a = A.t_for_any
-  let convert (l: ('s, 't, a, a) t): (a, 's, a) getter =
+  type 's t = {F: Functor} -> (a -> a F.t) -> ('s -> 's F.t)
+  let convert (l: 's t): (a, 's, a) getter =
     l {Const {A}}
 end
 
 implicit module Traversal_Getter {A: Monoid} : Getter
-  with type ('s, 't, 'a, 'b) t = {F: Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
-  and type a = A.t
+  with type a = A.t
+  and type 's t = {F: Applicative} -> (A.t -> A.t F.t) -> ('s -> 's F.t)
 = struct
-  type ('s, 't, 'a, 'b) t = {F: Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
   type a = A.t
-  let convert (l: ('s, 't, a, a) t): (a, 's, a) getter =
+  type 's t = {F: Applicative} -> (a -> a F.t) -> ('s -> 's F.t)
+  let convert (l: 's t): (a, 's, a) getter =
     l {Const_Applicative {A}}
 end
 
-let get {L: Getter} (lens: ('s, 't, L.a, L.a) L.t) s =
+let get {L: Getter} (lens: 's L.t) s =
   let Const a' = L.convert lens (fun a -> Const a) s
   in a'
 
