@@ -25,7 +25,9 @@ let set (lens: ('s, 't, 'a, 'b) lens) (b: 'b) (s: 's) : 't =
   let Identity t = lens (fun _ -> Identity b) s
   in t
 
-let get {A: Any} (lens: ('s, 't, A.t_for_any, A.t_for_any) lens) s =
+let get (type a) (lens: ('s, 't, a, a) lens) s =
+  let implicit module A: Any with type t_for_any = a
+    = struct type t_for_any = a end in
   let Const a' = lens (fun a -> Const a) s
   in a'
 
