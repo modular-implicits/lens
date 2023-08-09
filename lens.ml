@@ -34,3 +34,23 @@ let get (type a) (lens: ('s, 't, a, a) lens) s =
 (* (l >< m) f = l (m (f)) *)
 let (><) (l: ('s, 't, 'x, 'y) lens) (m: ('x, 'y, 'a, 'b) lens) : ('s, 't, 'a, 'b) lens =
   fun {F: Functor} f -> l (m f)
+
+type ('s, 'a) lens' = ('s, 's, 'a, 'a) lens
+
+let at (i: int): ('a list, 'a option) lens' =
+  let rec getIndex i = function
+    | [] -> None
+    | x :: xs ->
+      if i = 0 then Some x
+      else getIndex (i-1) xs
+  in
+  let rec setIndex y i = function
+    | [] -> []
+    | x :: xs ->
+      if i = 0 then (match y with
+        | None -> xs
+        | Some y' -> y' :: xs)
+      else x :: setIndex y (i-1) xs
+  in
+  let lens {F: Functor} f xs = F.fmap (fun x -> setIndex x i xs) (f (getIndex i xs))
+  in lens
