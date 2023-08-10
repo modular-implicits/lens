@@ -7,6 +7,7 @@ open Imp.Data
 type ('s, 't, 'a, 'b) lens = {F : Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
 type ('s, 'a) lens' = ('s, 's, 'a, 'a) lens
 type ('s, 't, 'a, 'b) traversal = {F : Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
+type ('s, 'a) traversal' = {F : Applicative} -> ('a -> 'a F.t) -> ('s -> 's F.t)
 
 type ('a, 's, 'x) getter = ('x -> ('a, 'x) const) -> ('s -> ('a, 's) const)
 
@@ -92,36 +93,42 @@ module T4 = struct
   let _4 {F: Functor} f (a, b, c, d) = F.fmap (fun d' -> (a, b, c, d')) (f d)
 end
 
-module type At = sig
-  type ix
+module type Indexed = sig
+  type index
   type value
   type t
-  val at : ix -> (t, value option) lens'
+  val index : index -> (t, value) traversal'
 end
 
-implicit module ListAt {A: Any}:
-  At with type ix = int and type value = A.t_for_any and type t = A.t_for_any list
+(* warning: indexing takes linear time! *)
+implicit module ListIndexed {A: Any}:
+  Indexed with type index = int and type value = A.t_for_any and type t = A.t_for_any list
 = struct
-  type ix = int
+  type index = int
   type value = A.t_for_any
   type t = A.t_for_any list
-  let at i: (t, value option) lens' =
-    let rec getIndex i = function
-      | [] -> None
-      | x :: xs ->
-        if i = 0 then Some x
-        else getIndex (i-1) xs
+    
+  let index i : (t, value) traversal' =
+    let rec go : ({F: Applicative} -> (value -> value F.t) -> value list * int -> (value list) F.t) = fun {F: Applicative} f -> function
+      | ([], _) -> F.return []
+      | (x :: xs, 0) -> F.fmap (fun x' -> x' :: xs) (f x)
+      | (x :: xs, i) -> F.fmap (fun xs' -> x :: xs') (go {F} f (xs, i - 1))
     in
-    let rec setIndex y i = function
-      | [] -> []
-      | x :: xs ->
-        if i = 0 then (match y with
-          | None -> xs
-          | Some y' -> y' :: xs)
-        else x :: setIndex y (i-1) xs
-    in
-    let lens {F: Functor} f xs = F.fmap (fun x -> setIndex x i xs) (f (getIndex i xs))
+    let lens {F: Applicative} f xs = go {F} f (xs, i)
     in lens
 end
 
-let at {A: At} = A.at
+let index {I: Indexed} = I.index
+
+let getMaybe (type a) (lens: ('s, 's, a, a) traversal) s =
+  let implicit module First : Imp.Data.Monoid
+     with type t = a option
+  = struct
+    type t = a option
+    let empty = None
+    let append x y = match x with
+      | None -> y
+      | Some x' -> Some x'
+  end in
+  let Const a' = lens (fun a -> Const (Some a)) s
+  in a'
