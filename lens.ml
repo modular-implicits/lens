@@ -92,20 +92,36 @@ module T4 = struct
   let _4 {F: Functor} f (a, b, c, d) = F.fmap (fun d' -> (a, b, c, d')) (f d)
 end
 
-let at (i: int): ('a list, 'a option) lens' =
-  let rec getIndex i = function
-    | [] -> None
-    | x :: xs ->
-      if i = 0 then Some x
-      else getIndex (i-1) xs
-  in
-  let rec setIndex y i = function
-    | [] -> []
-    | x :: xs ->
-      if i = 0 then (match y with
-        | None -> xs
-        | Some y' -> y' :: xs)
-      else x :: setIndex y (i-1) xs
-  in
-  let lens {F: Functor} f xs = F.fmap (fun x -> setIndex x i xs) (f (getIndex i xs))
-  in lens
+module type At = sig
+  type ix
+  type value
+  type t
+  val at : ix -> (t, value option) lens'
+end
+
+implicit module ListAt {A: Any}:
+  At with type ix = int and type value = A.t_for_any and type t = A.t_for_any list
+= struct
+  type ix = int
+  type value = A.t_for_any
+  type t = A.t_for_any list
+  let at i: (t, value option) lens' =
+    let rec getIndex i = function
+      | [] -> None
+      | x :: xs ->
+        if i = 0 then Some x
+        else getIndex (i-1) xs
+    in
+    let rec setIndex y i = function
+      | [] -> []
+      | x :: xs ->
+        if i = 0 then (match y with
+          | None -> xs
+          | Some y' -> y' :: xs)
+        else x :: setIndex y (i-1) xs
+    in
+    let lens {F: Functor} f xs = F.fmap (fun x -> setIndex x i xs) (f (getIndex i xs))
+    in lens
+end
+
+let at {A: At} = A.at

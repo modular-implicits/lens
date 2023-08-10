@@ -15,4 +15,4 @@ let () =
   assert (set (at 2) (Some 9) [0;1;2;3;4] = [0;1;9;3;4]);
   assert (set (at 2) None [0;1;2;3;4] = [0;1;3;4]);
   assert (get (at 2) [0;1;2;3;4] = Some 2);
-  assert (get (at 9) [0;1;2;3;4] = None)
+  assert (get (at 9) [0;1;2;3;4] = (None: int option))
