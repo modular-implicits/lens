@@ -1,3 +1,5 @@
+module OCAML_String = String
+
 open Imp.Any
 open Imp.Control
 open Imp.Data
@@ -115,6 +117,26 @@ implicit module ListIndexed {A: Any}:
       | (x :: xs, i) -> F.fmap (fun xs' -> x :: xs') (go {F} f (xs, i - 1))
     in
     let lens {F: Applicative} f xs = go {F} f (xs, i)
+    in lens
+end
+
+(* warning: doesn't work with Unicode *)
+implicit module StringIndexed: Indexed
+  with type index = int and type value = char and type t = string
+= struct
+  type index = int
+  type value = char
+  type t = string
+
+  let index i : (t, value) traversal' =
+    let open OCAML_String in
+    let lens {F: Applicative} f s =
+      let l = length s in
+      if i < 0 || i >= l then F.return "" else
+      let start = sub s 0 i in
+      let middle = get s i in
+      let end' = sub s (i+1) (l-i-1) in
+      F.fmap (fun middle' -> start ^ make 1 middle' ^ end') (f middle)
     in lens
 end
 
