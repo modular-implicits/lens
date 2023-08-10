@@ -121,12 +121,12 @@ implicit module ListIndexed {A: Any}:
 end
 
 (* warning: doesn't work with Unicode *)
-implicit module StringIndexed: Indexed
-  with type index = int and type value = char and type t = string
+implicit module BytesIndexed: Indexed
+  with type index = int and type value = char and type t = bytes
 = struct
   type index = int
   type value = char
-  type t = string
+  type t = bytes
 
   let index i : (t, value) traversal' =
     let open OCAML_String in
