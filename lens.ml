@@ -27,6 +27,9 @@ implicit module Traversal_ToTraversal: ToTraversal
   let convert x = x
 end
 
+let ( **** ) (l: ('s, 't, 'x, 'y) lens) (m: ('x, 'y, 'a, 'b) lens) : ('s, 't, 'a, 'b) lens =
+  fun {F: Functor} f -> l (m f)
+
 let ( *** ) {X: ToTraversal} {Y: ToTraversal} (l: ('s, 't, 'x, 'y) X.t) (m: ('x, 'y, 'a, 'b) Y.t) : ('s, 't, 'a, 'b) traversal =
   fun {F: Applicative} f -> (X.convert l) ((Y.convert m) f)
 
