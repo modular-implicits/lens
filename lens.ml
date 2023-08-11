@@ -7,31 +7,65 @@ open Imp.Data
 type ('s, 't, 'a, 'b) lens = {F : Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
 type ('s, 't, 'a, 'b) traversal = {F : Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
 
-module type ToTraversal = sig
-  type ('s, 't, 'a, 'b) t
-  val convert: ('s, 't, 'a, 'b) t -> ('s, 't, 'a, 'b) traversal
+module type Composable = sig
+  type ('s, 't, 'a, 'b) x
+  type ('s, 't, 'a, 'b) y
+  type ('s, 't, 'a, 'b) z
+  val ( *** ) : ('s, 't, 'p, 'q) x -> ('p, 'q, 'a, 'b) y -> ('s, 't, 'a, 'b) z
 end
 
-implicit module Lens_ToTraversal: ToTraversal
-  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) lens
+implicit module Lens_Composable: Composable
+  with type ('s, 't, 'a, 'b) x = ('s, 't, 'a, 'b) lens
+  and type ('s, 't, 'a, 'b) y = ('s, 't, 'a, 'b) lens
+  and type ('s, 't, 'a, 'b) z = ('s, 't, 'a, 'b) lens
 = struct
-  type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) lens
-  let convert (l: ('s, 't, 'a, 'b) lens): ('s, 't, 'a, 'b) traversal =
-    fun {F: Applicative} a -> l a
+  type ('s, 't, 'a, 'b) x = ('s, 't, 'a, 'b) lens
+  type ('s, 't, 'a, 'b) y = ('s, 't, 'a, 'b) lens
+  type ('s, 't, 'a, 'b) z = ('s, 't, 'a, 'b) lens
+  let ( *** ) (f: ('s, 't, 'p, 'q) x) (g: ('p, 'q, 'a, 'b) y): ('s, 't, 'a, 'b) z =
+    fun {F: Functor} a -> f {F} (g {F} a)
 end
 
-implicit module Traversal_ToTraversal: ToTraversal
-  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) traversal
+implicit module TraversalLens_Composable: Composable
+  with type ('s, 't, 'a, 'b) x = ('s, 't, 'a, 'b) traversal
+  and type ('s, 't, 'a, 'b) y = ('s, 't, 'a, 'b) lens
+  and type ('s, 't, 'a, 'b) z = ('s, 't, 'a, 'b) traversal
 = struct
-  type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) traversal
-  let convert x = x
+  type ('s, 't, 'a, 'b) x = ('s, 't, 'a, 'b) traversal
+  type ('s, 't, 'a, 'b) y = ('s, 't, 'a, 'b) lens
+  type ('s, 't, 'a, 'b) z = ('s, 't, 'a, 'b) traversal
+  let ( *** ) (f: ('s, 't, 'p, 'q) x) (g: ('p, 'q, 'a, 'b) y): ('s, 't, 'a, 'b) z =
+    fun {F: Applicative} a -> f {F} (g {F} a)
 end
 
-let ( **** ) (l: ('s, 't, 'x, 'y) lens) (m: ('x, 'y, 'a, 'b) lens) : ('s, 't, 'a, 'b) lens =
-  fun {F: Functor} f -> l (m f)
+implicit module LensTraversal_Composable: Composable
+  with type ('s, 't, 'a, 'b) x = ('s, 't, 'a, 'b) lens
+  and type ('s, 't, 'a, 'b) y = ('s, 't, 'a, 'b) traversal
+  and type ('s, 't, 'a, 'b) z = ('s, 't, 'a, 'b) traversal
+= struct
+  type ('s, 't, 'a, 'b) x = ('s, 't, 'a, 'b) lens
+  type ('s, 't, 'a, 'b) y = ('s, 't, 'a, 'b) traversal
+  type ('s, 't, 'a, 'b) z = ('s, 't, 'a, 'b) traversal
+  let ( *** ) (f: ('s, 't, 'p, 'q) x) (g: ('p, 'q, 'a, 'b) y): ('s, 't, 'a, 'b) z =
+    fun {F: Applicative} a -> f {F} (g {F} a)
+end
 
-let ( *** ) {X: ToTraversal} {Y: ToTraversal} (l: ('s, 't, 'x, 'y) X.t) (m: ('x, 'y, 'a, 'b) Y.t) : ('s, 't, 'a, 'b) traversal =
-  fun {F: Applicative} f -> (X.convert l) ((Y.convert m) f)
+implicit module Traversal_Composable: Composable
+  with type ('s, 't, 'a, 'b) x = ('s, 't, 'a, 'b) traversal
+  and type ('s, 't, 'a, 'b) y = ('s, 't, 'a, 'b) traversal
+  and type ('s, 't, 'a, 'b) z = ('s, 't, 'a, 'b) traversal
+= struct
+  type ('s, 't, 'a, 'b) x = ('s, 't, 'a, 'b) traversal
+  type ('s, 't, 'a, 'b) y = ('s, 't, 'a, 'b) traversal
+  type ('s, 't, 'a, 'b) z = ('s, 't, 'a, 'b) traversal
+  let ( *** ) (f: ('s, 't, 'p, 'q) x) (g: ('p, 'q, 'a, 'b) y): ('s, 't, 'a, 'b) z =
+    fun {F: Applicative} a -> f {F} (g {F} a)
+end
+
+let ( *** ) {C: Composable} = C.( *** )
+
+(* used to help the type checker *)
+let isTraversal (x: ('s, 't, 'a, 'b) traversal): ('s, 't, 'a, 'b) traversal = x
 
 type ('a, 's, 'x) getter = ('x -> ('a, 'x) const) -> ('s -> ('a, 's) const)
 
@@ -73,16 +107,16 @@ module type Setter = sig
 end
 
 implicit module Lens_Setter : Setter
-  with type ('s, 't, 'a, 'b) t = {F: Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
+  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) lens
 = struct
-  type ('s, 't, 'a, 'b) t = {F: Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
+  type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) lens
   let convert (l: ('s, 't, 'a, 'b) t): ('s, 't, 'a, 'b) setter = l {Identity}
 end
 
 implicit module Traversal_Setter : Setter
-  with type ('s, 't, 'a, 'b) t = {F: Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
+  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) traversal
 = struct
-  type ('s, 't, 'a, 'b) t = {F: Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
+  type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) traversal
   let convert (l: ('s, 't, 'a, 'b) t): ('s, 't, 'a, 'b) setter = l {Identity}
 end
 
