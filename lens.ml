@@ -39,9 +39,42 @@ let get {L: Getter} (lens: 's L.t) s =
   let Const a' = L.convert lens (fun a -> Const a) s
   in a'
 
-(* (l *** m) f = l (m (f)) *)
-let ( *** ) (l: ('s, 't, 'x, 'y) lens) (m: ('x, 'y, 'a, 'b) lens) : ('s, 't, 'a, 'b) lens =
-  fun {F: Functor} f -> l (m f)
+module type Composable = sig
+  module type X
+  module type Y
+  module type Z
+  val compose : ({X: X} -> 'b -> 'c) -> ({Y: Y} -> 'a -> 'b) -> ({Z: Z} -> 'a -> 'c)
+end
+
+implicit module LensComposable: Composable = struct
+  module type X = Functor
+  module type Y = Functor
+  module type Z = Functor
+  let compose (f: {X: X} -> 'b -> 'c) (g: {Y: Y} -> 'a -> 'b) = fun {Z: Z} a -> f {Z} (g {Z} a)
+end
+
+implicit module LensTraversableComposable: Composable = struct
+  module type X = Functor
+  module type Y = Applicative
+  module type Z = Applicative
+  let compose (f: {X: X} -> 'b -> 'c) (g: {Y: Y} -> 'a -> 'b) = fun {Z: Z} a -> f {Z} (g {Z} a)
+end
+
+implicit module TraversableLensComposable: Composable = struct
+  module type X = Applicative
+  module type Y = Functor
+  module type Z = Applicative
+  let compose (f: {X: X} -> 'b -> 'c) (g: {Y: Y} -> 'a -> 'b) = fun {Z: Z} a -> f {Z} (g {Z} a)
+end
+
+implicit module TraversableComposable: Composable = struct
+  module type X = Applicative
+  module type Y = Applicative
+  module type Z = Applicative
+  let compose (f: {X: X} -> 'b -> 'c) (g: {Y: Y} -> 'a -> 'b) = fun {Z: Z} a -> f {Z} (g {Z} a)
+end
+
+let ( *** ) {C: Composable} = C.compose
 
 type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
 
