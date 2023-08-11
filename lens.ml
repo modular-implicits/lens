@@ -39,8 +39,8 @@ let get {L: Getter} (lens: 's L.t) s =
   let Const a' = L.convert lens (fun a -> Const a) s
   in a'
 
-(* (l >< m) f = l (m (f)) *)
-let (><) (l: ('s, 't, 'x, 'y) lens) (m: ('x, 'y, 'a, 'b) lens) : ('s, 't, 'a, 'b) lens =
+(* (l *** m) f = l (m (f)) *)
+let ( *** ) (l: ('s, 't, 'x, 'y) lens) (m: ('x, 'y, 'a, 'b) lens) : ('s, 't, 'a, 'b) lens =
   fun {F: Functor} f -> l (m f)
 
 type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
