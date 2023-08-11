@@ -7,6 +7,29 @@ open Imp.Data
 type ('s, 't, 'a, 'b) lens = {F : Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
 type ('s, 't, 'a, 'b) traversal = {F : Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
 
+module type ToTraversal = sig
+  type ('s, 't, 'a, 'b) t
+  val convert: ('s, 't, 'a, 'b) t -> ('s, 't, 'a, 'b) traversal
+end
+
+implicit module Lens_ToTraversal: ToTraversal
+  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) lens
+= struct
+  type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) lens
+  let convert (l: ('s, 't, 'a, 'b) lens): ('s, 't, 'a, 'b) traversal =
+    fun {F: Applicative} a -> l a
+end
+
+implicit module Traversal_ToTraversal: ToTraversal
+  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) traversal
+= struct
+  type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) traversal
+  let convert x = x
+end
+
+let ( *** ) {X: ToTraversal} {Y: ToTraversal} (l: ('s, 't, 'x, 'y) X.t) (m: ('x, 'y, 'a, 'b) Y.t) : ('s, 't, 'a, 'b) traversal =
+  fun {F: Applicative} f -> (X.convert l) ((Y.convert m) f)
+
 type ('a, 's, 'x) getter = ('x -> ('a, 'x) const) -> ('s -> ('a, 's) const)
 
 module type Getter = sig
@@ -38,10 +61,6 @@ end
 let get {L: Getter} (lens: 's L.t) s =
   let Const a' = L.convert lens (fun a -> Const a) s
   in a'
-
-(* (l *** m) f = l (m (f)) *)
-let ( *** ) (l: ('s, 't, 'x, 'y) lens) (m: ('x, 'y, 'a, 'b) lens) : ('s, 't, 'a, 'b) lens =
-  fun {F: Functor} f -> l (m f)
 
 type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
 
