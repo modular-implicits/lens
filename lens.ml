@@ -1,3 +1,5 @@
+module OCAML_String = String
+
 open Imp.Any
 open Imp.Control
 open Imp.Data
@@ -5,7 +7,9 @@ open Imp.Data
 (* TYPE SETUP AND COMBINATORS *)
 
 type ('s, 't, 'a, 'b) lens = {F : Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
+type ('s, 'a) lens' = ('s, 's, 'a, 'a) lens
 type ('s, 't, 'a, 'b) traversal = {F : Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
+type ('s, 'a) traversal' = {F : Applicative} -> ('a -> 'a F.t) -> ('s -> 's F.t)
 
 module type Composable = sig
   type ('s, 't, 'a, 'b) x
@@ -143,3 +147,63 @@ module T4 = struct
   let _3 {F: Functor} f (a, b, c, d) = F.fmap (fun c' -> (a, b, c', d)) (f c)
   let _4 {F: Functor} f (a, b, c, d) = F.fmap (fun d' -> (a, b, c, d')) (f d)
 end
+
+module type Indexed = sig
+  type index
+  type value
+  type t
+  val index : index -> (t, value) traversal'
+end
+
+(* warning: indexing takes linear time! *)
+implicit module ListIndexed {A: Any}:
+  Indexed with type index = int and type value = A.t_for_any and type t = A.t_for_any list
+= struct
+  type index = int
+  type value = A.t_for_any
+  type t = A.t_for_any list
+    
+  let index i : (t, value) traversal' =
+    let rec go : ({F: Applicative} -> (value -> value F.t) -> value list * int -> (value list) F.t) = fun {F: Applicative} f -> function
+      | ([], _) -> F.return []
+      | (x :: xs, 0) -> F.fmap (fun x' -> x' :: xs) (f x)
+      | (x :: xs, i) -> F.fmap (fun xs' -> x :: xs') (go {F} f (xs, i - 1))
+    in
+    let lens {F: Applicative} f xs = go {F} f (xs, i)
+    in lens
+end
+
+(* warning: doesn't work with Unicode *)
+implicit module BytesIndexed: Indexed
+  with type index = int and type value = char and type t = bytes
+= struct
+  type index = int
+  type value = char
+  type t = bytes
+
+  let index i : (t, value) traversal' =
+    let open OCAML_String in
+    let lens {F: Applicative} f s =
+      let l = length s in
+      if i < 0 || i >= l then F.return "" else
+      let start = sub s 0 i in
+      let middle = get s i in
+      let end' = sub s (i+1) (l-i-1) in
+      F.fmap (fun middle' -> start ^ make 1 middle' ^ end') (f middle)
+    in lens
+end
+
+let index {I: Indexed} = I.index
+
+let getMaybe (type a) (lens: ('s, 's, a, a) traversal) s =
+  let implicit module First : Imp.Data.Monoid
+     with type t = a option
+  = struct
+    type t = a option
+    let empty = None
+    let append x y = match x with
+      | None -> y
+      | Some x' -> Some x'
+  end in
+  let Const a' = lens (fun a -> Const (Some a)) s
+  in a'
