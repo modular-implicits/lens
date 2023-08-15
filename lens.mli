@@ -105,6 +105,12 @@ implicit module Traversal_Setter : Setter
 val set : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> 'b -> 's -> 't
 (** `set` applies a setter. For example, `set T2._2 5 ("hi", "five") = ("hi", 5)` *)
 
+val mapped : {F: Functor} -> ('a F.t, 'b F.t, 'a, 'b) setter
+(** `mapped` constructs a setter which focuses on every element of a `Functor`.
+    Because of the relaxed constraint `Functor`, `mapped` can only produce a setter.
+    (Note that, unlike a getter, a setter can happily focus on multiple elements.)
+ *)
+
 val traversed : {T: Traversable} -> ('a T.t, 'b T.t, 'a, 'b) traversal
 (** `traversed` constructs a traversal which focuses on every element of a `Traversable`. *)
 

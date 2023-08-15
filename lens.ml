@@ -143,6 +143,11 @@ let set {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (b: 'b) (s: 's) : 't =
 
 (* THE LENSES THEMSELVES *)
 
+let mapped {F: Functor} : ('a F.t, 'b F.t, 'a, 'b) setter =
+  fun f s ->
+    let f' a = runIdentity (f a)
+    in Identity (fmap f' s)
+
 let traversed {T: Traversable} : ('a T.t, 'b T.t, 'a, 'b) traversal =
   fun {A: Applicative} f -> T.traverse f
 

@@ -16,4 +16,5 @@ let () =
   assert (getOption (index 12) [0;1;2;3;4] = None);
   assert (getOption (index ~-1) [0;1;2;3;4] = None);
   assert (set (index 3) '!' "abcdef" = "abc!ef");
-  assert (getOption (index 3) "abcdef" = Some 'd')
+  assert (getOption (index 3) "abcdef" = Some 'd');
+  assert (set (mapped {Imp.Control.List}) 4 [1;2;3] = [4;4;4])
