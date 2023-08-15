@@ -9,7 +9,7 @@ open Imp.Data
 type ('s, 't, 'a, 'b) lens = {F : Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
 type ('s, 'a) lens' = ('s, 's, 'a, 'a) lens
 type ('s, 't, 'a, 'b) traversal = {F : Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
-type ('s, 'a) traversal' = {F : Applicative} -> ('a -> 'a F.t) -> ('s -> 's F.t)
+type ('s, 'a) traversal' = ('s, 's, 'a, 'a) traversal
 
 module type Composable = sig
   type ('s, 't, 'a, 'b) x
