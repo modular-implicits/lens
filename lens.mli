@@ -5,8 +5,14 @@ open Imp.Data
 type ('s, 't, 'a, 'b) lens = {F : Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
 (** A lens has the same power as a getter and setter combined *)
 
+type ('s, 'a) lens' = {F : Functor} -> ('a -> 'a F.t) -> ('s -> 's F.t)
+(** `lens'` is an alias for a lens which doesn't change types *)
+
 type ('s, 't, 'a, 'b) traversal = {F : Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
 (** A traversal is like a lens, but it can operate on more then one focus at once *)
+
+type ('s, 'a) traversal' = {F : Applicative} -> ('a -> 'a F.t) -> ('s -> 's F.t)
+(** `traversal'` is an alias for a traversal which doesn't change types *)
 
 module type Composable = sig
   type ('s, 't, 'a, 'b) x
@@ -137,3 +143,40 @@ module T4: sig
   (** T4._4 focuses on the fourth element of a 4-tuple *)
 end
 (** T4 contains lenses for focusing on elements of 4-tuples *)
+
+module type Indexed = sig
+  type index
+  (** `index` is the type used to index the container - e.g. for lists, that integers *)
+
+  type value
+  (** `value` is the type inside the container *)
+
+  type t
+  (** `t` is the type of the container itself *)
+
+  val index : index -> (t, value) traversal'
+  (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
+      It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+end
+(** Indexed represents containers which use indexing to get values of the same type.
+    This includes lists, strings, maps, homogeneous tuples, etc.
+ *)
+
+implicit module ListIndexed {A: Any}:
+  Indexed with type index = int and type value = A.t_for_any and type t = A.t_for_any list
+(** Allows lists to be indexed.
+    Warning: indexing takes linear time!
+ *)
+
+implicit module BytesIndexed: Indexed
+  with type index = int and type value = char and type t = bytes
+(** Allows bytes/strings to be indexed.
+    Warning: doesn't work with Unicode strings - indexing is done by bytes only!
+ *)
+
+val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
+(** `index` takes an index and returns a traversal focusing on the referenced element of a container.
+    It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+
+val getMaybe : ('s, 's, 'a, 'a) traversal -> 's -> 'a option
+(** Gets the first item focused on by a traversal, or None if the traversal finds none. *)
