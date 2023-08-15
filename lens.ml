@@ -141,6 +141,10 @@ let set {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (b: 'b) (s: 's) : 't =
   let Identity t = L.convert l (fun _ -> Identity b) s
   in t
 
+let (@~) {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (f: 'a -> 'b) (s: 's) : 't =
+  let Identity t = L.convert l (fun a -> Identity (f a)) s
+  in t
+
 (* THE LENSES THEMSELVES *)
 
 let mapped {F: Functor} : ('a F.t, 'b F.t, 'a, 'b) setter =
