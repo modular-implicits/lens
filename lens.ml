@@ -64,9 +64,6 @@ end
 
 let ( *** ) {C: Composable} = C.( *** )
 
-(* used to help the type checker *)
-let isTraversal (x: ('s, 't, 'a, 'b) traversal): ('s, 't, 'a, 'b) traversal = x
-
 type ('a, 's, 'x) getter = ('x -> ('a, 'x) const) -> ('s -> ('a, 's) const)
 
 module type Getter = sig
