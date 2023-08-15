@@ -195,15 +195,7 @@ end
 
 let index {I: Indexed} = I.index
 
-let getOption (type a) (lens: ('s, 's, a, a) traversal) s =
-  let implicit module First : Imp.Data.Monoid
-     with type t = a option
-  = struct
-    type t = a option
-    let empty = None
-    let append x y = match x with
-      | None -> y
-      | Some x' -> Some x'
-  end in
-  let Const a' = lens (fun a -> Const (Some a)) s
+let getOption {A: Any} (lens: ('s, 's, A.t, A.t) traversal) (s: 's) : A.t option =
+  let open Monoid in
+  let Const { first = a' } = lens {Const_Applicative {First {A}}} (fun a -> Const { first = Some a }) s
   in a'
