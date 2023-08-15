@@ -77,10 +77,10 @@ module type Getter = sig
 end
 
 implicit module Lens_Getter {A: Any} : Getter
-  with type a = A.t_for_any
-  and type 's t = {F: Functor} -> (A.t_for_any -> A.t_for_any F.t) -> ('s -> 's F.t)
+  with type a = A.t
+  and type 's t = {F: Functor} -> (A.t -> A.t F.t) -> ('s -> 's F.t)
 = struct
-  type a = A.t_for_any
+  type a = A.t
   type 's t = {F: Functor} -> (a -> a F.t) -> ('s -> 's F.t)
   let convert (l: 's t): (a, 's, a) getter =
     l {Const {A}}
@@ -157,11 +157,11 @@ end
 
 (* warning: indexing takes linear time! *)
 implicit module ListIndexed {A: Any}:
-  Indexed with type index = int and type value = A.t_for_any and type t = A.t_for_any list
+  Indexed with type index = int and type value = A.t and type t = A.t list
 = struct
   type index = int
-  type value = A.t_for_any
-  type t = A.t_for_any list
+  type value = A.t
+  type t = A.t list
     
   let index i : (t, value) traversal' =
     let rec go : ({F: Applicative} -> (value -> value F.t) -> value list * int -> (value list) F.t) = fun {F: Applicative} f -> function

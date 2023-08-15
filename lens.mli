@@ -66,8 +66,8 @@ end
 (** Class for types that can be converted to getters. This includes lenses, and some traversals. *)
 
 implicit module Lens_Getter {A: Any} : Getter
-  with type a = A.t_for_any
-  and type 's t = {F: Functor} -> (A.t_for_any -> A.t_for_any F.t) -> ('s -> 's F.t)
+  with type a = A.t
+  and type 's t = {F: Functor} -> (A.t -> A.t F.t) -> ('s -> 's F.t)
 
 implicit module Traversal_Getter {A: Monoid} : Getter
   with type a = A.t
@@ -163,7 +163,7 @@ end
  *)
 
 implicit module ListIndexed {A: Any}:
-  Indexed with type index = int and type value = A.t_for_any and type t = A.t_for_any list
+  Indexed with type index = int and type value = A.t and type t = A.t list
 (** Allows lists to be indexed.
     Warning: indexing takes linear time!
  *)
