@@ -76,6 +76,15 @@ module type Getter = sig
   val convert : 's t -> (a, 's, a) getter
 end
 
+implicit module Getter_Getter {A: Any} : Getter
+  with type a = A.t
+  and type 's t = (A.t, 's, A.t) getter
+= struct
+  type a = A.t
+  type 's t = (A.t, 's, A.t) getter
+  let convert (l: 's t): (a, 's, a) getter = l
+end
+
 implicit module Lens_Getter {A: Any} : Getter
   with type a = A.t
   and type 's t = {F: Functor} -> (A.t -> A.t F.t) -> ('s -> 's F.t)
@@ -105,6 +114,13 @@ type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
 module type Setter = sig
   type ('s, 't, 'a, 'b) t
   val convert : ('s, 't, 'a, 'b) t -> ('s, 't, 'a, 'b) setter
+end
+
+implicit module Setter_Setter : Setter
+  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) setter
+= struct
+  type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) setter
+  let convert (l: ('s, 't, 'a, 'b) t): ('s, 't, 'a, 'b) setter = l
 end
 
 implicit module Lens_Setter : Setter

@@ -65,6 +65,10 @@ module type Getter = sig
 end
 (** Class for types that can be converted to getters. This includes lenses, and some traversals. *)
 
+implicit module Getter_Getter {A: Any} : Getter
+  with type a = A.t
+  and type 's t = (A.t, 's, A.t) getter
+
 implicit module Lens_Getter {A: Any} : Getter
   with type a = A.t
   and type 's t = {F: Functor} -> (A.t -> A.t F.t) -> ('s -> 's F.t)
@@ -88,6 +92,9 @@ module type Setter = sig
   val convert : ('s, 't, 'a, 'b) t -> ('s, 't, 'a, 'b) setter
 end
 (** Class for types that can be converted to setters. This includes lenses and traversals. *)
+
+implicit module Setter_Setter : Setter
+  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) setter
 
 implicit module Lens_Setter : Setter
   with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) lens
