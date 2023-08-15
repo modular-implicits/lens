@@ -9,7 +9,7 @@ open Imp.Data
 type ('s, 't, 'a, 'b) lens = {F : Functor} -> ('a -> 'b F.t) -> ('s -> 't F.t)
 type ('s, 'a) lens' = ('s, 's, 'a, 'a) lens
 type ('s, 't, 'a, 'b) traversal = {F : Applicative} -> ('a -> 'b F.t) -> ('s -> 't F.t)
-type ('s, 'a) traversal' = {F : Applicative} -> ('a -> 'a F.t) -> ('s -> 's F.t)
+type ('s, 'a) traversal' = ('s, 's, 'a, 'a) traversal
 
 module type Composable = sig
   type ('s, 't, 'a, 'b) x
@@ -68,9 +68,6 @@ end
 
 let ( *** ) {C: Composable} = C.( *** )
 
-(* used to help the type checker *)
-let isTraversal (x: ('s, 't, 'a, 'b) traversal): ('s, 't, 'a, 'b) traversal = x
-
 type ('a, 's, 'x) getter = ('x -> ('a, 'x) const) -> ('s -> ('a, 's) const)
 
 module type Getter = sig
@@ -80,10 +77,10 @@ module type Getter = sig
 end
 
 implicit module Lens_Getter {A: Any} : Getter
-  with type a = A.t_for_any
-  and type 's t = {F: Functor} -> (A.t_for_any -> A.t_for_any F.t) -> ('s -> 's F.t)
+  with type a = A.t
+  and type 's t = {F: Functor} -> (A.t -> A.t F.t) -> ('s -> 's F.t)
 = struct
-  type a = A.t_for_any
+  type a = A.t
   type 's t = {F: Functor} -> (a -> a F.t) -> ('s -> 's F.t)
   let convert (l: 's t): (a, 's, a) getter =
     l {Const {A}}
@@ -160,11 +157,11 @@ end
 
 (* warning: indexing takes linear time! *)
 implicit module ListIndexed {A: Any}:
-  Indexed with type index = int and type value = A.t_for_any and type t = A.t_for_any list
+  Indexed with type index = int and type value = A.t and type t = A.t list
 = struct
   type index = int
-  type value = A.t_for_any
-  type t = A.t_for_any list
+  type value = A.t
+  type t = A.t list
     
   let index i : (t, value) traversal' =
     let rec go : ({F: Applicative} -> (value -> value F.t) -> value list * int -> (value list) F.t) = fun {F: Applicative} f -> function
@@ -198,15 +195,7 @@ end
 
 let index {I: Indexed} = I.index
 
-let getMaybe (type a) (lens: ('s, 's, a, a) traversal) s =
-  let implicit module First : Imp.Data.Monoid
-     with type t = a option
-  = struct
-    type t = a option
-    let empty = None
-    let append x y = match x with
-      | None -> y
-      | Some x' -> Some x'
-  end in
-  let Const a' = lens (fun a -> Const (Some a)) s
+let getOption {A: Any} (lens: ('s, 's, A.t, A.t) traversal) (s: 's) : A.t option =
+  let open Monoid in
+  let Const { first = a' } = lens {Const_Applicative {First {A}}} (fun a -> Const { first = Some a }) s
   in a'
