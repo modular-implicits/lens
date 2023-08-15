@@ -195,7 +195,7 @@ end
 
 let index {I: Indexed} = I.index
 
-let getMaybe (type a) (lens: ('s, 's, a, a) traversal) s =
+let getOption (type a) (lens: ('s, 's, a, a) traversal) s =
   let implicit module First : Imp.Data.Monoid
      with type t = a option
   = struct

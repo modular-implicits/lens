@@ -178,5 +178,5 @@ val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
 (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
     It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
 
-val getMaybe : ('s, 's, 'a, 'a) traversal -> 's -> 'a option
+val getOption : ('s, 's, 'a, 'a) traversal -> 's -> 'a option
 (** Gets the first item focused on by a traversal, or None if the traversal finds none. *)
