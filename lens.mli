@@ -123,8 +123,15 @@ val (@.) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> 'b -> 's -> 't
     For example, `("hi", "five") |> T2._1 @. 5 = ("hi", 5)`
  *)
 
+val modify : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> ('a -> 'b) -> 's -> 't
+(** `modify` applies a setter using a given modification function.
+    For example, `("hello", 5) |> modify T2_2 ((+) 1) = ("hello", 6)`
+ *)
+
 val (@~) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> ('a -> 'b) -> 's -> 't
-(** `@~` applies a setter using a given modification function. For example, `("hello", 5) |> T2._2 @~ ((+) 1) = ("hello", 6)` *)
+(** `@~` is an infix form of `modify`.
+    For example, `("hello", 5) |> T2_2 @~ ((+) 1) = ("hello", 6)`
+ *)
 
 val mapped : {F: Functor} -> ('a F.t, 'b F.t, 'a, 'b) setter
 (** `mapped` constructs a setter which focuses on every element of a `Functor`.
