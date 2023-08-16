@@ -164,7 +164,14 @@ let modify {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (f: 'a -> 'b) (s: 's) : 't =
 
 let (@~) = modify
 
-(* THE LENSES THEMSELVES *)
+module type Indexed = sig
+  type index
+  type value
+  type t
+  val index : index -> (t, value) traversal'
+end
+
+let index {I: Indexed} = I.index
 
 let mapped {F: Functor} : ('a F.t, 'b F.t, 'a, 'b) setter =
   fun f s ->
@@ -173,6 +180,8 @@ let mapped {F: Functor} : ('a F.t, 'b F.t, 'a, 'b) setter =
 
 let traversed {T: Traversable} : ('a T.t, 'b T.t, 'a, 'b) traversal =
   fun {A: Applicative} f -> T.traverse f
+
+(* THE LENSES THEMSELVES *)
 
 module T2 = struct
   let _1 {F: Functor} f (a, b) = F.fmap (fun a' -> (a', b)) (f a)
@@ -190,13 +199,6 @@ module T4 = struct
   let _2 {F: Functor} f (a, b, c, d) = F.fmap (fun b' -> (a, b', c, d)) (f b)
   let _3 {F: Functor} f (a, b, c, d) = F.fmap (fun c' -> (a, b, c', d)) (f c)
   let _4 {F: Functor} f (a, b, c, d) = F.fmap (fun d' -> (a, b, c, d')) (f d)
-end
-
-module type Indexed = sig
-  type index
-  type value
-  type t
-  val index : index -> (t, value) traversal'
 end
 
 (* warning: indexing takes linear time! *)
@@ -275,5 +277,3 @@ implicit module Tuple4Indexed {A: Any} : Indexed
     | 3 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun d' -> (a, b, c, d')) (f d)
     | _ -> fun {F: Applicative} _ s      -> F.return s
 end
-
-let index {I: Indexed} = I.index

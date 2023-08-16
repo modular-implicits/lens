@@ -142,6 +142,28 @@ val mapped : {F: Functor} -> ('a F.t, 'b F.t, 'a, 'b) setter
 val traversed : {T: Traversable} -> ('a T.t, 'b T.t, 'a, 'b) traversal
 (** `traversed` constructs a traversal which focuses on every element of a `Traversable`. *)
 
+module type Indexed = sig
+  type index
+  (** `index` is the type used to index the container - e.g. for lists, that integers *)
+
+  type value
+  (** `value` is the type inside the container *)
+
+  type t
+  (** `t` is the type of the container itself *)
+
+  val index : index -> (t, value) traversal'
+  (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
+      It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+end
+(** Indexed represents containers which use indexing to get values of the same type.
+    This includes lists, strings, maps, homogeneous tuples, etc.
+ *)
+
+val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
+(** `index` takes an index and returns a traversal focusing on the referenced element of a container.
+    It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+
 (** Below are modules containing lenses which focus on specific elements of tuples.
     They have consistent names: to focus on the x'th element of a tuple of size y, use Ty._x
     (e.g. for the first element of a pair, T2._1)
@@ -185,24 +207,6 @@ module T4: sig
 end
 (** T4 contains lenses for focusing on elements of 4-tuples *)
 
-module type Indexed = sig
-  type index
-  (** `index` is the type used to index the container - e.g. for lists, that integers *)
-
-  type value
-  (** `value` is the type inside the container *)
-
-  type t
-  (** `t` is the type of the container itself *)
-
-  val index : index -> (t, value) traversal'
-  (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
-      It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
-end
-(** Indexed represents containers which use indexing to get values of the same type.
-    This includes lists, strings, maps, homogeneous tuples, etc.
- *)
-
 implicit module ListIndexed {A: Any}:
   Indexed with type index = int and type value = A.t and type t = A.t list
 (** Allows lists to be indexed.
@@ -226,7 +230,3 @@ implicit module Tuple3Indexed {A: Any}: Indexed
 implicit module Tuple4Indexed {A: Any}: Indexed
   with type index = int and type value = A.t and type t = A.t * A.t * A.t * A.t
 (** Allows 4-tuples to be indexed. (Only indices 0 to 3 focus on anything.) *)
-
-val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
-(** `index` takes an index and returns a traversal focusing on the referenced element of a container.
-    It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
