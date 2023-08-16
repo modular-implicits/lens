@@ -133,18 +133,6 @@ val (@~) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> ('a -> 'b) -> 's -> 't
     For example, `("hello", 5) |> T2_2 @~ ((+) 1) = ("hello", 6)`
  *)
 
-val mapped : {F: Functor} -> ('a F.t, 'b F.t, 'a, 'b) setter
-(** `mapped` constructs a setter which focuses on every element of a `Functor`.
-    Because of the relaxed constraint `Functor`, `mapped` can only produce a setter.
-    (Note that, unlike a getter, a setter can happily focus on multiple elements.)
- *)
-
-val traversed : {T: Traversable} -> ('a T.t, 'b T.t, 'a, 'b) traversal
-(** `traversed` constructs a traversal which focuses on every element of a `Traversable`. *)
-
-val empty : ('s, 's, 'a, 'b) traversal
-(** The empty traversal for any type, focusing on no values *)
-
 module type Indexed = sig
   type index
   (** `index` is the type used to index the container - e.g. for lists, that integers *)
@@ -167,8 +155,28 @@ val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
 (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
     It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
 
+val mapped : {F: Functor} -> ('a F.t, 'b F.t, 'a, 'b) setter
+(** `mapped` constructs a setter which focuses on every element of a `Functor`.
+    Because of the relaxed constraint `Functor`, `mapped` can only produce a setter.
+    (Note that, unlike a getter, a setter can happily focus on multiple elements.)
+ *)
+
+val traversed : {T: Traversable} -> ('a T.t, 'b T.t, 'a, 'b) traversal
+(** `traversed` constructs a traversal which focuses on every element of a `Traversable`. *)
+
+val empty : ('s, 's, 'a, 'b) traversal
+(** The empty traversal for any type, focusing on no values *)
+
 val equality : ('s, 't, 's, 't) lens
 (** Focuses on the entire data structure - the "identity" lens *)
+
+val head : ('a list, 'a) traversal'
+(** Focuses on the head (first element) of a list, or on nothing if the list is empty. *)
+
+val tail : ('a list, 'a) traversal'
+(** Focuses on the tail of a list (everything after the first element).
+    If the list is empty, this focuses on nothing.
+ *)
 
 (** Below are modules containing lenses which focus on specific elements of tuples.
     They have consistent names: to focus on the x'th element of a tuple of size y, use Ty._x

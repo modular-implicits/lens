@@ -187,6 +187,14 @@ let equality {F: Functor} (f: 'a -> 'b F.t) a = f a
 
 (* THE LENSES THEMSELVES *)
 
+let head {F: Applicative} f = function
+  | a :: as_ -> F.fmap (fun a' -> a' :: as_) (f a)
+  | [] -> F.return []
+
+let tail {F: Applicative} f = function
+  | a :: as_ -> F.fmap (fun as' -> a :: as') (traverse f as_)
+  | [] -> F.return []
+
 module T2 = struct
   let _1 {F: Functor} f (a, b) = F.fmap (fun a' -> (a', b)) (f a)
   let _2 {F: Functor} f (a, b) = F.fmap (fun b' -> (a, b')) (f b)
