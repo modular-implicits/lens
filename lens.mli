@@ -190,6 +190,18 @@ implicit module BytesIndexed: Indexed
     Warning: doesn't work with Unicode strings - indexing is done by bytes only!
  *)
 
+implicit module Tuple2Indexed {A: Any}: Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t
+(** Allows pairs (2-tuples) to be indexed. (Only indices 0 and 1 focus on anything.) *)
+
+implicit module Tuple3Indexed {A: Any}: Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t * A.t
+(** Allows 3-tuples to be indexed. (Only indices 0, 1, and 2 focus on anything.) *)
+
+implicit module Tuple4Indexed {A: Any}: Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t * A.t * A.t
+(** Allows 4-tuples to be indexed. (Only indices 0 to 3 focus on anything.) *)
+
 val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
 (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
     It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)

@@ -218,6 +218,45 @@ implicit module BytesIndexed: Indexed
     in lens
 end
 
+implicit module Tuple2Indexed {A: Any} : Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t
+= struct
+  type index = int
+  type value = A.t
+  type t = A.t * A.t
+  let index = function
+    | 0 -> fun {F: Applicative} f (a, b) -> F.fmap (fun a' -> (a', b)) (f a)
+    | 1 -> fun {F: Applicative} f (a, b) -> F.fmap (fun b' -> (a, b')) (f b)
+    | _ -> fun {F: Applicative} _ s      -> F.return s
+end
+
+implicit module Tuple3Indexed {A: Any} : Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t * A.t 
+= struct
+  type index = int
+  type value = A.t
+  type t = A.t * A.t * A.t
+  let index = function
+    | 0 -> fun {F: Applicative} f (a, b, c) -> F.fmap (fun a' -> (a', b, c)) (f a)
+    | 1 -> fun {F: Applicative} f (a, b, c) -> F.fmap (fun b' -> (a, b', c)) (f b)
+    | 2 -> fun {F: Applicative} f (a, b, c) -> F.fmap (fun c' -> (a, b, c')) (f c)
+    | _ -> fun {F: Applicative} _ s      -> F.return s
+end
+
+implicit module Tuple4Indexed {A: Any} : Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t * A.t * A.t
+= struct
+  type index = int
+  type value = A.t
+  type t = A.t * A.t * A.t * A.t
+  let index = function
+    | 0 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun a' -> (a', b, c, d)) (f a)
+    | 1 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun b' -> (a, b', c, d)) (f b)
+    | 2 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun c' -> (a, b, c', d)) (f c)
+    | 3 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun d' -> (a, b, c, d')) (f d)
+    | _ -> fun {F: Applicative} _ s      -> F.return s
+end
+
 let index {I: Indexed} = I.index
 
 let getOption (type a) (lens: ('s, 's, a, a) traversal) (s: 's) : a option =
