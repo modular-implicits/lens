@@ -183,6 +183,8 @@ let traversed {T: Traversable} : ('a T.t, 'b T.t, 'a, 'b) traversal =
 
 let empty {F: Applicative} (_: 'a -> 'b F.t) s = F.return s
 
+let equality {F: Functor} (f: 'a -> 'b F.t) a = f a
+
 (* THE LENSES THEMSELVES *)
 
 module T2 = struct

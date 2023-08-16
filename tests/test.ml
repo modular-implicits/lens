@@ -25,4 +25,5 @@ let () =
   assert (("hello", 5) |> T2._2 @~ ((+) 1) = ("hello", 6));
   assert (("hi", "five") |> T2._2 @. 5 = ("hi", 5));
   assert (("hi", 5) ^. T2._1 = "hi");
-  assert (123 ^? empty = None)
+  assert (123 ^? empty = None);
+  assert ("five" |> equality @. 5 = 5)

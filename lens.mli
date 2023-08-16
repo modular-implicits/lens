@@ -167,6 +167,9 @@ val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
 (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
     It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
 
+val equality : ('s, 't, 's, 't) lens
+(** Focuses on the entire data structure - the "identity" lens *)
+
 (** Below are modules containing lenses which focus on specific elements of tuples.
     They have consistent names: to focus on the x'th element of a tuple of size y, use Ty._x
     (e.g. for the first element of a pair, T2._1)
