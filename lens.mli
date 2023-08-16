@@ -218,3 +218,8 @@ val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
 
 val getOption : ('s, 's, 'a, 'a) traversal -> 's -> 'a option
 (** Gets the first item focused on by a traversal, or None if the traversal finds none. *)
+
+val (^?) : 's -> ('s, 's, 'a, 'a) traversal -> 'a option
+(** Infix alias for `getOption` (with the arguments swapped)
+    For example, `"abcd" ^? index 2 = 'c'`
+ *)

@@ -273,3 +273,5 @@ let getOption (type a) (lens: ('s, 's, a, a) traversal) (s: 's) : a option =
   end in
   let Const { first = a' } = lens {Const_Applicative {First {A}}} (fun a -> Const { first = Some a }) s
   in a'
+
+let (^?) s l = getOption l s
