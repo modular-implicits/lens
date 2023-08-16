@@ -109,6 +109,8 @@ let get {L: Getter} (lens: 's L.t) s =
   let Const a' = L.convert lens (fun a -> Const a) s
   in a'
 
+let (^.) {L: Getter} s l = get {L} l s
+
 type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
 
 module type Setter = sig
@@ -140,6 +142,8 @@ end
 let set {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (b: 'b) (s: 's) : 't =
   let Identity t = L.convert l (fun _ -> Identity b) s
   in t
+
+let (@.) = set
 
 let (@~) {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (f: 'a -> 'b) (s: 's) : 't =
   let Identity t = L.convert l (fun a -> Identity (f a)) s

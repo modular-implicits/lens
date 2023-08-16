@@ -22,4 +22,6 @@ let () =
   assert (set (index 0) 'c' ('a', 'b') = ('c', 'b'));
   assert (set (index 3) 'c' ('a', 'b') = ('a', 'b'));
   assert (set (mapped {Imp.Control.List}) 4 [1;2;3] = [4;4;4]);
-  assert (("hello", 5) |> T2._2 @~ ((+) 1) = ("hello", 6))
+  assert (("hello", 5) |> T2._2 @~ ((+) 1) = ("hello", 6));
+  assert (("hi", "five") |> T2._2 @. 5 = ("hi", 5));
+  assert (("hi", 5) ^. T2._1 = "hi")

@@ -84,6 +84,11 @@ implicit module Traversal_Getter {A: Monoid} : Getter
 val get : {L: Getter} -> 's L.t -> 's -> L.a
 (** `get` applies a getter. For example, `get T2._2 ("hi", 5) = 5` *)
 
+val (^.) : {L: Getter} -> 's -> 's L.t -> L.a
+(** Infix form of get (with arguments in the opposite order).
+    For example, `("hi", 5) ^. T2._1 = "hi"`
+ *)
+
 type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
 (** A setter is a write-only functional reference. It is a specialisation of a lens. *)
 
@@ -104,6 +109,11 @@ implicit module Traversal_Setter : Setter
 
 val set : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> 'b -> 's -> 't
 (** `set` applies a setter. For example, `set T2._2 5 ("hi", "five") = ("hi", 5)` *)
+
+val (@.) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> 'b -> 's -> 't
+(** `@.` is an infix form of `set`.
+    For example, `("hi", "five") |> T2._1 @. 5 = ("hi", 5)`
+ *)
 
 val (@~) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> ('a -> 'b) -> 's -> 't
 (** `@~` applies a setter using a given modification function. For example, `("hello", 5) |> T2._2 @~ ((+) 1) = ("hello", 6)` *)
