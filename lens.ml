@@ -181,6 +181,8 @@ let mapped {F: Functor} : ('a F.t, 'b F.t, 'a, 'b) setter =
 let traversed {T: Traversable} : ('a T.t, 'b T.t, 'a, 'b) traversal =
   fun {A: Applicative} f -> T.traverse f
 
+let empty {F: Applicative} (_: 'a -> 'b F.t) s = F.return s
+
 (* THE LENSES THEMSELVES *)
 
 module T2 = struct

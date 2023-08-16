@@ -142,6 +142,9 @@ val mapped : {F: Functor} -> ('a F.t, 'b F.t, 'a, 'b) setter
 val traversed : {T: Traversable} -> ('a T.t, 'b T.t, 'a, 'b) traversal
 (** `traversed` constructs a traversal which focuses on every element of a `Traversable`. *)
 
+val empty : ('s, 's, 'a, 'b) traversal
+(** The empty traversal for any type, focusing on no values *)
+
 module type Indexed = sig
   type index
   (** `index` is the type used to index the container - e.g. for lists, that integers *)

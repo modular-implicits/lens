@@ -24,4 +24,5 @@ let () =
   assert (set (mapped {Imp.Control.List}) 4 [1;2;3] = [4;4;4]);
   assert (("hello", 5) |> T2._2 @~ ((+) 1) = ("hello", 6));
   assert (("hi", "five") |> T2._2 @. 5 = ("hi", 5));
-  assert (("hi", 5) ^. T2._1 = "hi")
+  assert (("hi", 5) ^. T2._1 = "hi");
+  assert (123 ^? empty = None)
