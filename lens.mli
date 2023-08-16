@@ -85,8 +85,16 @@ val get : {L: Getter} -> 's L.t -> 's -> L.a
 (** `get` applies a getter. For example, `get T2._2 ("hi", 5) = 5` *)
 
 val (^.) : {L: Getter} -> 's -> 's L.t -> L.a
-(** Infix form of get (with arguments in the opposite order).
+(** `^.` is an infix form of get (with arguments in the opposite order).
     For example, `("hi", 5) ^. T2._1 = "hi"`
+ *)
+
+val getOption : ('s, 's, 'a, 'a) traversal -> 's -> 'a option
+(** Gets the first item focused on by a traversal, or None if the traversal finds none. *)
+
+val (^?) : 's -> ('s, 's, 'a, 'a) traversal -> 'a option
+(** `^?` is an infix form of `getOption` (with the arguments swapped)
+    For example, `"abcd" ^? index 2 = 'c'`
  *)
 
 type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
@@ -215,11 +223,3 @@ implicit module Tuple4Indexed {A: Any}: Indexed
 val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
 (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
     It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
-
-val getOption : ('s, 's, 'a, 'a) traversal -> 's -> 'a option
-(** Gets the first item focused on by a traversal, or None if the traversal finds none. *)
-
-val (^?) : 's -> ('s, 's, 'a, 'a) traversal -> 'a option
-(** Infix alias for `getOption` (with the arguments swapped)
-    For example, `"abcd" ^? index 2 = 'c'`
- *)

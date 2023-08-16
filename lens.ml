@@ -111,6 +111,19 @@ let get {L: Getter} (lens: 's L.t) s =
 
 let (^.) {L: Getter} s l = get {L} l s
 
+let getOption (type a) (lens: ('s, 's, a, a) traversal) (s: 's) : a option =
+  let open Monoid in
+  let implicit module A: Any
+    with type t = a
+  = struct
+    type t = a
+    let __any__ = ()
+  end in
+  let Const { first = a' } = lens {Const_Applicative {First {A}}} (fun a -> Const { first = Some a }) s
+  in a'
+
+let (^?) s l = getOption l s
+
 type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
 
 module type Setter = sig
@@ -262,16 +275,3 @@ implicit module Tuple4Indexed {A: Any} : Indexed
 end
 
 let index {I: Indexed} = I.index
-
-let getOption (type a) (lens: ('s, 's, a, a) traversal) (s: 's) : a option =
-  let open Monoid in
-  let implicit module A: Any
-    with type t = a
-  = struct
-    type t = a
-    let __any__ = ()
-  end in
-  let Const { first = a' } = lens {Const_Applicative {First {A}}} (fun a -> Const { first = Some a }) s
-  in a'
-
-let (^?) s l = getOption l s
