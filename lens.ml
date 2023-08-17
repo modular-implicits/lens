@@ -173,6 +173,15 @@ end
 
 let index {I: Indexed} = I.index
 
+module type At = sig
+  type index
+  type value
+  type t
+  val at : index -> (t, value option) lens'
+end
+
+let at {I: At} = I.at
+
 let mapped {F: Functor} : ('a F.t, 'b F.t, 'a, 'b) setter =
   fun f s ->
     let f' a = runIdentity (f a)
@@ -288,4 +297,32 @@ implicit module Tuple4Indexed {A: Any} : Indexed
     | 2 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun c' -> (a, b, c', d)) (f c)
     | 3 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun d' -> (a, b, c, d')) (f d)
     | _ -> fun {F: Applicative} _ s      -> F.return s
+end
+
+implicit module MapIndexed {M: Map.S} {V: Any} : Indexed
+  with type index = M.key and type value = V.t and type t = V.t M.t
+= struct
+  type index = M.key
+  type value = V.t
+  type t = V.t M.t
+  let index k = fun {F: Applicative} f m ->
+    if M.mem k m
+    then F.fmap (fun x' -> M.add k x' m) (f (M.find k m))
+    else F.return m
+end
+
+implicit module MapAt {M: Map.S} {V: Any} : At
+  with type index = M.key and type value = V.t and type t = V.t M.t
+= struct
+  type index = M.key
+  type value = V.t
+  type t = V.t M.t
+  let at k = fun {F: Functor} f m ->
+    let update = function
+      | None -> M.remove k m
+      | Some x' -> M.add k x' m
+    in
+    if M.mem k m
+    then F.fmap update (f (Some (M.find k m)))
+    else F.fmap update (f None)
 end

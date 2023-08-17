@@ -155,6 +155,33 @@ val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
 (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
     It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
 
+module type At = sig
+  type index
+  (** `index` is the type used to index the container - e.g. for lists, that integers *)
+
+  type value
+  (** `value` is the type inside the container *)
+
+  type t
+  (** `t` is the type of the container itself *)
+
+  val at : index -> (t, value option) lens'
+  (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
+      It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+end
+(** At represents map-like containers that can be Indexed (see above).
+    Entries can be focused on using a lens with an `option` result type:
+    a value of None indicates the entry with a given key is not present.
+
+    Note that list-like containers are not suitable, as they would break the lens laws.
+    This is because the keys (indices) of entries change when preceding elements are
+    inserted or removed.
+ *)
+
+val at : {I: At} -> I.index -> (I.t, I.value option) lens'
+(** `index` takes an index and returns a traversal focusing on the referenced element of a container.
+    It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+
 val mapped : {F: Functor} -> ('a F.t, 'b F.t, 'a, 'b) setter
 (** `mapped` constructs a setter which focuses on every element of a `Functor`.
     Because of the relaxed constraint `Functor`, `mapped` can only produce a setter.
@@ -244,3 +271,24 @@ implicit module Tuple3Indexed {A: Any}: Indexed
 implicit module Tuple4Indexed {A: Any}: Indexed
   with type index = int and type value = A.t and type t = A.t * A.t * A.t * A.t
 (** Allows 4-tuples to be indexed. (Only indices 0 to 3 focus on anything.) *)
+
+implicit module MapIndexed {M: Map.S} {V: Any}: Indexed
+  with type index = M.key and type value = V.t and type t = V.t M.t
+(** Allows Maps (from the OCaml stdlib) to be indexed using their keys.
+
+    The module returned by Map.Make must be marked `implicit` in scope for this to work,
+    unless you explicitly pass {MapIndexed {MyMap}} everywhere.
+
+    Note that due to how Indexed works, if a key does not exist in the map,
+    then setting its value will not cause it to be inserted. If you want that behaviour,
+    use `at`.
+ *)
+
+implicit module MapAt {M: Map.S} {V: Any}: At
+  with type index = M.key and type value = V.t and type t = V.t M.t
+(** Allows entries in Maps (from the OCaml stdlib) to be focused with a lens. See `At`
+    for more detail.
+
+    The module returned by Map.Make must be marked `implicit` in scope for this to work,
+    unless you explicitly pass {MapIndexed {MyMap}} everywhere.
+ *)

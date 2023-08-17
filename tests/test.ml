@@ -29,3 +29,17 @@ let () =
   assert ("five" |> equality @. 5 = 5);
   assert ([1;2;3] |> head @. 0 = [0;2;3]);
   assert ([1;2;3] |> tail @. 0 = [1;0;0])
+
+let () =
+  let open Imp.Any in
+  let open Lens in
+  let module IntOrd = struct
+    type t = int
+    let compare (x: int) y = compare x y
+  end in
+  let implicit module IntMap = Map.Make (IntOrd) in
+  assert (IntMap.empty ^? index 3 = (None: char option));
+  assert (get (at 3) (IntMap.empty |> set (at 3) (Some "three")) = Some "three");
+  (* without this, we get an unused open Imp.Any;
+     and changing that to open implicit Imp.Any gives a type error for some reason *)
+  Any_Int.__any__
