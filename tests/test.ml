@@ -1,5 +1,8 @@
 let () =
   let open implicit Imp.Any in
+  (* suppress "unused open Imp.Control" warning
+     changing this to `open implicit` gives a type error for some reason *)
+  let open [@warning "-33"] Imp.Control in
   let open implicit Imp.Data in
   let open Lens in
   assert (set T2._1 "lol" (1, "hello") = ("lol", "hello"));
@@ -7,9 +10,9 @@ let () =
   assert (get T2._2 (1, "hello") = "hello");
   assert (get ((T2._1 *** T2._2): _ lens) (("lol", 5), "hello") = 5);
   assert (set ((T2._1 *** T2._2): _ lens) 7 ((5, "lol"), "hello") = ((5, 7), "hello"));
-  assert (set (traversed {Imp.Control.List}) 5 [1;2;3;4] = [5;5;5;5]);
-  assert (get (traversed {Imp.Control.List}) ["hi"; "there"] = "hithere");
-  assert (get ((traversed {Imp.Control.List} *** T2._1): _ traversal) [("hi", 5); ("there", 3)] = "hithere");
+  assert (set (traversed ()) 5 [1;2;3;4] = [5;5;5;5]);
+  assert (get (traversed ()) ["hi"; "there"] = "hithere");
+  assert (get ((traversed () *** T2._1): _ traversal) [("hi", 5); ("there", 3)] = "hithere");
   assert (set (index 2) 9 [0;1;2;3;4] = [0;1;9;3;4]);
   assert (set (index 7) 9 [0;1;2;3;4] = [0;1;2;3;4]);
   assert (getOption (index 2) [0;1;2;3;4] = Some 2);
@@ -21,7 +24,7 @@ let () =
   assert (('a', 'b') ^? index 3 = None);
   assert (set (index 0) 'c' ('a', 'b') = ('c', 'b'));
   assert (set (index 3) 'c' ('a', 'b') = ('a', 'b'));
-  assert (set (mapped {Imp.Control.List}) 4 [1;2;3] = [4;4;4]);
+  assert (set (mapped ()) 4 [1;2;3] = [4;4;4]);
   assert (("hello", 5) |> T2._2 @~ ((+) 1) = ("hello", 6));
   assert (("hi", "five") |> T2._2 @. 5 = ("hi", 5));
   assert (("hi", 5) ^. T2._1 = "hi");
@@ -32,7 +35,7 @@ let () =
   assert ([1;2;3] |> tail @. 0 = [1;0;0])
 
 let () =
-  let open Imp.Any in
+  let open [@warning "-33"] Imp.Any in
   let open Lens in
   let module IntOrd = struct
     type t = int
@@ -46,10 +49,7 @@ let () =
   assert (myMap |> at 1 @? "one" = myMap);
   let myMap' = myMap |> IntMap.add 3 "three" in
   assert (myMap |> at 3 @? "three" = myMap');
-  assert (myMap' |> at 3 @. None = myMap);
-  (* without this, we get an unused open Imp.Any;
-     and changing that to open implicit Imp.Any gives a type error for some reason *)
-  Any_Int.__any__
+  assert (myMap' |> at 3 @. None = myMap)
 
 let () =
   let open Imp.Any in
@@ -58,10 +58,9 @@ let () =
   let open Lens in
   let module S = State {Any_Option {Any_Int}} in
   let (>>) a b = bind {S} a (fun _ -> b) in
-  let t = traversed {Imp.Control.Option} in
   ignore (
     put (Some 0) >>
-    (t =~ (+) 1) >>
+    (traversed () =~ (+) 1) >>
     fmap (fun x -> assert (x = Some 1)) (Imp.Transformers.get {S}) >>
     (equality =. Some 35) >>
     fmap (fun x -> assert (x = Some 35)) (Imp.Transformers.get {S}) >>

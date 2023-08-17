@@ -194,12 +194,12 @@ end
 
 let at {I: At} = I.at
 
-let mapped {F: Functor} : ('a F.t, 'b F.t, 'a, 'b) setter =
+let mapped {F: Functor} () : ('a F.t, 'b F.t, 'a, 'b) setter =
   fun f s ->
     let f' a = runIdentity (f a)
     in Identity (fmap f' s)
 
-let traversed {T: Traversable} : ('a T.t, 'b T.t, 'a, 'b) traversal =
+let traversed {T: Traversable} () : ('a T.t, 'b T.t, 'a, 'b) traversal =
   fun {A: Applicative} f -> T.traverse f
 
 let empty {F: Applicative} (_: 'a -> 'b F.t) s = F.return s

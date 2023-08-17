@@ -205,14 +205,21 @@ val at : {I: At} -> I.index -> (I.t, I.value option) lens'
     This also means you can remove the entry by setting the value to `None`.
  *)
 
-val mapped : {F: Functor} -> ('a F.t, 'b F.t, 'a, 'b) setter
+val mapped : {F: Functor} -> unit -> ('a F.t, 'b F.t, 'a, 'b) setter
 (** `mapped` constructs a setter which focuses on every element of a `Functor`.
     Because of the relaxed constraint `Functor`, `mapped` can only produce a setter.
     (Note that, unlike a getter, a setter can happily focus on multiple elements.)
+
+    This function takes a dummy unit argument to improve type inference
+    - the limitation is explained [here](https://github.com/modular-implicits/lens/pull/6#discussion_r1297204629)
  *)
 
-val traversed : {T: Traversable} -> ('a T.t, 'b T.t, 'a, 'b) traversal
-(** `traversed` constructs a traversal which focuses on every element of a `Traversable`. *)
+val traversed : {T: Traversable} -> unit -> ('a T.t, 'b T.t, 'a, 'b) traversal
+(** `traversed` constructs a traversal which focuses on every element of a `Traversable`.
+
+    This function takes a dummy unit argument to improve type inference
+    - the limitation is explained [here](https://github.com/modular-implicits/lens/pull/6#discussion_r1297204629)
+ *)
 
 val empty : ('s, 's, 'a, 'b) traversal
 (** The empty traversal for any type, focusing on no values *)
