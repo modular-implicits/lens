@@ -157,7 +157,7 @@ val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
 
 module type At = sig
   type index
-  (** `index` is the type used to index the container - e.g. for lists, that integers *)
+  (** `index` is the type used to index the container (e.g. the keys of a map) *)
 
   type value
   (** `value` is the type inside the container *)
@@ -166,8 +166,10 @@ module type At = sig
   (** `t` is the type of the container itself *)
 
   val at : index -> (t, value option) lens'
-  (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
-      It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+  (** `at` takes an index and returns a lens focusing on the referenced value in a container.
+      A value of `None` at the focus indicates the key is not present.
+      This also means you can remove the entry by setting the value to `None`.
+   *)
 end
 (** At represents map-like containers that can be Indexed (see above).
     Entries can be focused on using a lens with an `option` result type:
@@ -179,8 +181,10 @@ end
  *)
 
 val at : {I: At} -> I.index -> (I.t, I.value option) lens'
-(** `index` takes an index and returns a traversal focusing on the referenced element of a container.
-    It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+(** `at` takes an index and returns a lens focusing on the referenced value in a container.
+    A value of `None` at the focus indicates the key is not present.
+    This also means you can remove the entry by setting the value to `None`.
+ *)
 
 val mapped : {F: Functor} -> ('a F.t, 'b F.t, 'a, 'b) setter
 (** `mapped` constructs a setter which focuses on every element of a `Functor`.
