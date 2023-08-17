@@ -123,12 +123,20 @@ val (@.) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> 'b -> 's -> 't
     For example, `("hi", "five") |> T2._1 @. 5 = ("hi", 5)`
  *)
 
+val (=.) : {M: Imp.Transformers.MonadState} -> {L: Setter} ->
+  (M.s, M.s, 'a, 'b) L.t -> 'b -> unit M.t
+(** `=.` is like `@.`, but applies monadically to the state of a MonadState. *)
+
 val (@?) : {L: Setter} -> ('s, 't, 'a, 'b option) L.t -> 'b -> 's -> 't
 (** `@?` applies a setter, wrapping the value you give in `Some`.
     This is particularly useful for instances of `At`.
     For example, `Map.empty |> at 3 @. "three"` produces a map with one entry,
     mapping 3 to "three".
  *)
+
+val (=?) : {M: Imp.Transformers.MonadState} -> {L: Setter} ->
+  (M.s, M.s, 'a, 'b option) L.t -> 'b -> unit M.t
+(** `=?` is like `@?`, but applies monadically to the state of a MonadState. *)
 
 val modify : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> ('a -> 'b) -> 's -> 't
 (** `modify` applies a setter using a given modification function.
@@ -139,6 +147,10 @@ val (@~) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> ('a -> 'b) -> 's -> 't
 (** `@~` is an infix form of `modify`.
     For example, `("hello", 5) |> T2_2 @~ ((+) 1) = ("hello", 6)`
  *)
+
+val (=~) : {M: Imp.Transformers.MonadState} -> {L: Setter} ->
+  (M.s, M.s, 'a, 'b) L.t -> ('a -> 'b) -> unit M.t
+(** `=~` is like `@~`, but applies monadically to the state of a MonadState. *)
 
 module type Indexed = sig
   type index

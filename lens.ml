@@ -158,14 +158,23 @@ let set {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (b: 'b) (s: 's) : 't =
 
 let (@.) = set
 
+let (=.) {M: Imp.Transformers.MonadState} {L: Setter} (l: (M.s, M.s, 'a, 'b) L.t) (b: 'b) : unit M.t =
+  Imp.Transformers.modify (set l b)
+
 let (@?) {L: Setter} (l: ('s, 't, 'a, 'b option) L.t) (b: 'b) (s: 's) : 't =
   set l (Some b) s
+
+let (=?) {M: Imp.Transformers.MonadState} {L: Setter} (l: (M.s, M.s, 'a, 'b option) L.t) (b: 'b) : unit M.t =
+  Imp.Transformers.modify (l @? b)
 
 let modify {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (f: 'a -> 'b) (s: 's) : 't =
   let Identity t = L.convert l (fun a -> Identity (f a)) s
   in t
 
 let (@~) = modify
+
+let (=~) {M: Imp.Transformers.MonadState} {L: Setter} (l: (M.s, M.s, 'a, 'b) L.t) (f: 'a -> 'b) : unit M.t =
+  Imp.Transformers.modify (modify l f)
 
 module type Indexed = sig
   type index
