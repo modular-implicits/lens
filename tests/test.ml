@@ -39,7 +39,13 @@ let () =
   end in
   let implicit module IntMap = Map.Make (IntOrd) in
   assert (IntMap.empty ^? index 3 = (None: char option));
-  assert (get (at 3) (IntMap.empty |> set (at 3) (Some "three")) = Some "three");
+  let myMap = IntMap.(empty |> add 1 "one" |> add 2 "two") in
+  assert (myMap ^. at 1 = Some "one");
+  assert (myMap ^. at 3 = (None: string option));
+  assert (myMap |> at 1 @. (Some "one") = myMap);
+  let myMap' = myMap |> IntMap.add 3 "three" in
+  assert (myMap |> at 3 @. (Some "three") = myMap');
+  assert (myMap' |> at 3 @. None = myMap);
   (* without this, we get an unused open Imp.Any;
      and changing that to open implicit Imp.Any gives a type error for some reason *)
   Any_Int.__any__
