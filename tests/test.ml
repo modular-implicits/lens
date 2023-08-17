@@ -25,6 +25,7 @@ let () =
   assert (("hello", 5) |> T2._2 @~ ((+) 1) = ("hello", 6));
   assert (("hi", "five") |> T2._2 @. 5 = ("hi", 5));
   assert (("hi", 5) ^. T2._1 = "hi");
+  assert (("hi", 5) |> T2._1 @? true = (Some true, 5));
   assert (123 ^? empty = None);
   assert ("five" |> equality @. 5 = 5);
   assert ([1;2;3] |> head @. 0 = [0;2;3]);
@@ -42,9 +43,9 @@ let () =
   let myMap = IntMap.(empty |> add 1 "one" |> add 2 "two") in
   assert (myMap ^. at 1 = Some "one");
   assert (myMap ^. at 3 = (None: string option));
-  assert (myMap |> at 1 @. (Some "one") = myMap);
+  assert (myMap |> at 1 @? "one" = myMap);
   let myMap' = myMap |> IntMap.add 3 "three" in
-  assert (myMap |> at 3 @. (Some "three") = myMap');
+  assert (myMap |> at 3 @? "three" = myMap');
   assert (myMap' |> at 3 @. None = myMap);
   (* without this, we get an unused open Imp.Any;
      and changing that to open implicit Imp.Any gives a type error for some reason *)

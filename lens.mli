@@ -123,6 +123,13 @@ val (@.) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> 'b -> 's -> 't
     For example, `("hi", "five") |> T2._1 @. 5 = ("hi", 5)`
  *)
 
+val (@?) : {L: Setter} -> ('s, 't, 'a, 'b option) L.t -> 'b -> 's -> 't
+(** `@?` applies a setter, wrapping the value you give in `Some`.
+    This is particularly useful for instances of `At`.
+    For example, `Map.empty |> at 3 @. "three"` produces a map with one entry,
+    mapping 3 to "three".
+ *)
+
 val modify : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> ('a -> 'b) -> 's -> 't
 (** `modify` applies a setter using a given modification function.
     For example, `("hello", 5) |> modify T2_2 ((+) 1) = ("hello", 6)`

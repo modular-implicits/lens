@@ -158,6 +158,9 @@ let set {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (b: 'b) (s: 's) : 't =
 
 let (@.) = set
 
+let (@?) {L: Setter} (l: ('s, 't, 'a, 'b option) L.t) (b: 'b) (s: 's) : 't =
+  set l (Some b) s
+
 let modify {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (f: 'a -> 'b) (s: 's) : 't =
   let Identity t = L.convert l (fun a -> Identity (f a)) s
   in t
