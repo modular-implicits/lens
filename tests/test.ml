@@ -50,3 +50,21 @@ let () =
   (* without this, we get an unused open Imp.Any;
      and changing that to open implicit Imp.Any gives a type error for some reason *)
   Any_Int.__any__
+
+let () =
+  let open Imp.Any in
+  let open Imp.Control in
+  let open Imp.Transformers in
+  let open Lens in
+  let module S = State {Any_Option {Any_Int}} in
+  let (>>) a b = bind {S} a (fun _ -> b) in
+  let t = traversed {Imp.Control.Option} in
+  ignore (
+    put (Some 0) >>
+    (t =~ (+) 1) >>
+    fmap (fun x -> assert (x = Some 1)) (Imp.Transformers.get {S}) >>
+    (equality =. Some 35) >>
+    fmap (fun x -> assert (x = Some 35)) (Imp.Transformers.get {S}) >>
+    (equality =? ~-2) >>
+    fmap (fun x -> assert (x = Some ~-2)) (Imp.Transformers.get {S})
+  )
