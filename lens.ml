@@ -76,6 +76,15 @@ module type Getter = sig
   val convert : 's t -> (a, 's, a) getter
 end
 
+implicit module Getter_Getter {A: Any} : Getter
+  with type a = A.t
+  and type 's t = (A.t, 's, A.t) getter
+= struct
+  type a = A.t
+  type 's t = (A.t, 's, A.t) getter
+  let convert (l: 's t): (a, 's, a) getter = l
+end
+
 implicit module Lens_Getter {A: Any} : Getter
   with type a = A.t
   and type 's t = {F: Functor} -> (A.t -> A.t F.t) -> ('s -> 's F.t)
@@ -100,11 +109,33 @@ let get {L: Getter} (lens: 's L.t) s =
   let Const a' = L.convert lens (fun a -> Const a) s
   in a'
 
+let (^.) {L: Getter} s l = get {L} l s
+
+let getOption (type a) (lens: ('s, 's, a, a) traversal) (s: 's) : a option =
+  let open Monoid in
+  let implicit module A: Any
+    with type t = a
+  = struct
+    type t = a
+    let __any__ = ()
+  end in
+  let Const { first = a' } = lens {Const_Applicative {First {A}}} (fun a -> Const { first = Some a }) s
+  in a'
+
+let (^?) s l = getOption l s
+
 type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
 
 module type Setter = sig
   type ('s, 't, 'a, 'b) t
   val convert : ('s, 't, 'a, 'b) t -> ('s, 't, 'a, 'b) setter
+end
+
+implicit module Setter_Setter : Setter
+  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) setter
+= struct
+  type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) setter
+  let convert (l: ('s, 't, 'a, 'b) t): ('s, 't, 'a, 'b) setter = l
 end
 
 implicit module Lens_Setter : Setter
@@ -125,10 +156,65 @@ let set {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (b: 'b) (s: 's) : 't =
   let Identity t = L.convert l (fun _ -> Identity b) s
   in t
 
+let (@.) = set
+
+let (=.) {M: Imp.Transformers.MonadState} {L: Setter} (l: (M.s, M.s, 'a, 'b) L.t) (b: 'b) : unit M.t =
+  Imp.Transformers.modify (set l b)
+
+let (@?) {L: Setter} (l: ('s, 't, 'a, 'b option) L.t) (b: 'b) (s: 's) : 't =
+  set l (Some b) s
+
+let (=?) {M: Imp.Transformers.MonadState} {L: Setter} (l: (M.s, M.s, 'a, 'b option) L.t) (b: 'b) : unit M.t =
+  Imp.Transformers.modify (l @? b)
+
+let modify {L: Setter} (l: ('s, 't, 'a, 'b) L.t) (f: 'a -> 'b) (s: 's) : 't =
+  let Identity t = L.convert l (fun a -> Identity (f a)) s
+  in t
+
+let (@~) = modify
+
+let (=~) {M: Imp.Transformers.MonadState} {L: Setter} (l: (M.s, M.s, 'a, 'b) L.t) (f: 'a -> 'b) : unit M.t =
+  Imp.Transformers.modify (modify l f)
+
+module type Indexed = sig
+  type index
+  type value
+  type t
+  val index : index -> (t, value) traversal'
+end
+
+let index {I: Indexed} = I.index
+
+module type At = sig
+  type index
+  type value
+  type t
+  val at : index -> (t, value option) lens'
+end
+
+let at {I: At} = I.at
+
+let mapped {F: Functor} () : ('a F.t, 'b F.t, 'a, 'b) setter =
+  fun f s ->
+    let f' a = runIdentity (f a)
+    in Identity (fmap f' s)
+
+let traversed {T: Traversable} () : ('a T.t, 'b T.t, 'a, 'b) traversal =
+  fun {A: Applicative} f -> T.traverse f
+
+let empty {F: Applicative} (_: 'a -> 'b F.t) s = F.return s
+
+let equality {F: Functor} (f: 'a -> 'b F.t) a = f a
+
 (* THE LENSES THEMSELVES *)
 
-let traversed {T: Traversable} : ('a T.t, 'b T.t, 'a, 'b) traversal =
-  fun {A: Applicative} f -> T.traverse f
+let head {F: Applicative} f = function
+  | a :: as_ -> F.fmap (fun a' -> a' :: as_) (f a)
+  | [] -> F.return []
+
+let tail {F: Applicative} f = function
+  | a :: as_ -> F.fmap (fun as' -> a :: as') (traverse f as_)
+  | [] -> F.return []
 
 module T2 = struct
   let _1 {F: Functor} f (a, b) = F.fmap (fun a' -> (a', b)) (f a)
@@ -146,13 +232,6 @@ module T4 = struct
   let _2 {F: Functor} f (a, b, c, d) = F.fmap (fun b' -> (a, b', c, d)) (f b)
   let _3 {F: Functor} f (a, b, c, d) = F.fmap (fun c' -> (a, b, c', d)) (f c)
   let _4 {F: Functor} f (a, b, c, d) = F.fmap (fun d' -> (a, b, c, d')) (f d)
-end
-
-module type Indexed = sig
-  type index
-  type value
-  type t
-  val index : index -> (t, value) traversal'
 end
 
 (* warning: indexing takes linear time! *)
@@ -193,9 +272,69 @@ implicit module BytesIndexed: Indexed
     in lens
 end
 
-let index {I: Indexed} = I.index
+implicit module Tuple2Indexed {A: Any} : Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t
+= struct
+  type index = int
+  type value = A.t
+  type t = A.t * A.t
+  let index = function
+    | 0 -> fun {F: Applicative} f (a, b) -> F.fmap (fun a' -> (a', b)) (f a)
+    | 1 -> fun {F: Applicative} f (a, b) -> F.fmap (fun b' -> (a, b')) (f b)
+    | _ -> fun {F: Applicative} _ s      -> F.return s
+end
 
-let getOption {A: Any} (lens: ('s, 's, A.t, A.t) traversal) (s: 's) : A.t option =
-  let open Monoid in
-  let Const { first = a' } = lens {Const_Applicative {First {A}}} (fun a -> Const { first = Some a }) s
-  in a'
+implicit module Tuple3Indexed {A: Any} : Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t * A.t 
+= struct
+  type index = int
+  type value = A.t
+  type t = A.t * A.t * A.t
+  let index = function
+    | 0 -> fun {F: Applicative} f (a, b, c) -> F.fmap (fun a' -> (a', b, c)) (f a)
+    | 1 -> fun {F: Applicative} f (a, b, c) -> F.fmap (fun b' -> (a, b', c)) (f b)
+    | 2 -> fun {F: Applicative} f (a, b, c) -> F.fmap (fun c' -> (a, b, c')) (f c)
+    | _ -> fun {F: Applicative} _ s      -> F.return s
+end
+
+implicit module Tuple4Indexed {A: Any} : Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t * A.t * A.t
+= struct
+  type index = int
+  type value = A.t
+  type t = A.t * A.t * A.t * A.t
+  let index = function
+    | 0 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun a' -> (a', b, c, d)) (f a)
+    | 1 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun b' -> (a, b', c, d)) (f b)
+    | 2 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun c' -> (a, b, c', d)) (f c)
+    | 3 -> fun {F: Applicative} f (a, b, c, d) -> F.fmap (fun d' -> (a, b, c, d')) (f d)
+    | _ -> fun {F: Applicative} _ s      -> F.return s
+end
+
+implicit module MapIndexed {M: Map.S} {V: Any} : Indexed
+  with type index = M.key and type value = V.t and type t = V.t M.t
+= struct
+  type index = M.key
+  type value = V.t
+  type t = V.t M.t
+  let index k = fun {F: Applicative} f m ->
+    if M.mem k m
+    then F.fmap (fun x' -> M.add k x' m) (f (M.find k m))
+    else F.return m
+end
+
+implicit module MapAt {M: Map.S} {V: Any} : At
+  with type index = M.key and type value = V.t and type t = V.t M.t
+= struct
+  type index = M.key
+  type value = V.t
+  type t = V.t M.t
+  let at k = fun {F: Functor} f m ->
+    let update = function
+      | None -> M.remove k m
+      | Some x' -> M.add k x' m
+    in
+    if M.mem k m
+    then F.fmap update (f (Some (M.find k m)))
+    else F.fmap update (f None)
+end

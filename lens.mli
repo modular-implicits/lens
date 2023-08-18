@@ -65,6 +65,10 @@ module type Getter = sig
 end
 (** Class for types that can be converted to getters. This includes lenses, and some traversals. *)
 
+implicit module Getter_Getter {A: Any} : Getter
+  with type a = A.t
+  and type 's t = (A.t, 's, A.t) getter
+
 implicit module Lens_Getter {A: Any} : Getter
   with type a = A.t
   and type 's t = {F: Functor} -> (A.t -> A.t F.t) -> ('s -> 's F.t)
@@ -80,6 +84,19 @@ implicit module Traversal_Getter {A: Monoid} : Getter
 val get : {L: Getter} -> 's L.t -> 's -> L.a
 (** `get` applies a getter. For example, `get T2._2 ("hi", 5) = 5` *)
 
+val (^.) : {L: Getter} -> 's -> 's L.t -> L.a
+(** `^.` is an infix form of get (with arguments in the opposite order).
+    For example, `("hi", 5) ^. T2._1 = "hi"`
+ *)
+
+val getOption : ('s, 's, 'a, 'a) traversal -> 's -> 'a option
+(** Gets the first item focused on by a traversal, or None if the traversal finds none. *)
+
+val (^?) : 's -> ('s, 's, 'a, 'a) traversal -> 'a option
+(** `^?` is an infix form of `getOption` (with the arguments swapped)
+    For example, `"abcd" ^? index 2 = 'c'`
+ *)
+
 type ('s, 't, 'a, 'b) setter = ('a -> 'b identity) -> ('s -> 't identity)
 (** A setter is a write-only functional reference. It is a specialisation of a lens. *)
 
@@ -88,6 +105,9 @@ module type Setter = sig
   val convert : ('s, 't, 'a, 'b) t -> ('s, 't, 'a, 'b) setter
 end
 (** Class for types that can be converted to setters. This includes lenses and traversals. *)
+
+implicit module Setter_Setter : Setter
+  with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) setter
 
 implicit module Lens_Setter : Setter
   with type ('s, 't, 'a, 'b) t = ('s, 't, 'a, 'b) lens
@@ -98,8 +118,122 @@ implicit module Traversal_Setter : Setter
 val set : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> 'b -> 's -> 't
 (** `set` applies a setter. For example, `set T2._2 5 ("hi", "five") = ("hi", 5)` *)
 
-val traversed : {T: Traversable} -> ('a T.t, 'b T.t, 'a, 'b) traversal
-(** `traversed` constructs a traversal which focuses on every element of a `Traversable`. *)
+val (@.) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> 'b -> 's -> 't
+(** `@.` is an infix form of `set`.
+    For example, `("hi", "five") |> T2._1 @. 5 = ("hi", 5)`
+ *)
+
+val (=.) : {M: Imp.Transformers.MonadState} -> {L: Setter} ->
+  (M.s, M.s, 'a, 'b) L.t -> 'b -> unit M.t
+(** `=.` is like `@.`, but applies monadically to the state of a MonadState. *)
+
+val (@?) : {L: Setter} -> ('s, 't, 'a, 'b option) L.t -> 'b -> 's -> 't
+(** `@?` applies a setter, wrapping the value you give in `Some`.
+    This is particularly useful for instances of `At`.
+    For example, `Map.empty |> at 3 @. "three"` produces a map with one entry,
+    mapping 3 to "three".
+ *)
+
+val (=?) : {M: Imp.Transformers.MonadState} -> {L: Setter} ->
+  (M.s, M.s, 'a, 'b option) L.t -> 'b -> unit M.t
+(** `=?` is like `@?`, but applies monadically to the state of a MonadState. *)
+
+val modify : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> ('a -> 'b) -> 's -> 't
+(** `modify` applies a setter using a given modification function.
+    For example, `("hello", 5) |> modify T2_2 ((+) 1) = ("hello", 6)`
+ *)
+
+val (@~) : {L: Setter} -> ('s, 't, 'a, 'b) L.t -> ('a -> 'b) -> 's -> 't
+(** `@~` is an infix form of `modify`.
+    For example, `("hello", 5) |> T2_2 @~ ((+) 1) = ("hello", 6)`
+ *)
+
+val (=~) : {M: Imp.Transformers.MonadState} -> {L: Setter} ->
+  (M.s, M.s, 'a, 'b) L.t -> ('a -> 'b) -> unit M.t
+(** `=~` is like `@~`, but applies monadically to the state of a MonadState. *)
+
+module type Indexed = sig
+  type index
+  (** `index` is the type used to index the container - e.g. for lists, that integers *)
+
+  type value
+  (** `value` is the type inside the container *)
+
+  type t
+  (** `t` is the type of the container itself *)
+
+  val index : index -> (t, value) traversal'
+  (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
+      It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+end
+(** Indexed represents containers which use indexing to get values of the same type.
+    This includes lists, strings, maps, homogeneous tuples, etc.
+ *)
+
+val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
+(** `index` takes an index and returns a traversal focusing on the referenced element of a container.
+    It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+
+module type At = sig
+  type index
+  (** `index` is the type used to index the container (e.g. the keys of a map) *)
+
+  type value
+  (** `value` is the type inside the container *)
+
+  type t
+  (** `t` is the type of the container itself *)
+
+  val at : index -> (t, value option) lens'
+  (** `at` takes an index and returns a lens focusing on the referenced value in a container.
+      A value of `None` at the focus indicates the key is not present.
+      This also means you can remove the entry by setting the value to `None`.
+   *)
+end
+(** At represents map-like containers that can be Indexed (see above).
+    Entries can be focused on using a lens with an `option` result type:
+    a value of None indicates the entry with a given key is not present.
+
+    Note that list-like containers are not suitable, as they would break the lens laws.
+    This is because the keys (indices) of entries change when preceding elements are
+    inserted or removed.
+ *)
+
+val at : {I: At} -> I.index -> (I.t, I.value option) lens'
+(** `at` takes an index and returns a lens focusing on the referenced value in a container.
+    A value of `None` at the focus indicates the key is not present.
+    This also means you can remove the entry by setting the value to `None`.
+ *)
+
+val mapped : {F: Functor} -> unit -> ('a F.t, 'b F.t, 'a, 'b) setter
+(** `mapped` constructs a setter which focuses on every element of a `Functor`.
+    Because of the relaxed constraint `Functor`, `mapped` can only produce a setter.
+    (Note that, unlike a getter, a setter can happily focus on multiple elements.)
+
+    This function takes a dummy unit argument to improve type inference
+    - the limitation is explained [here](https://github.com/modular-implicits/lens/pull/6#discussion_r1297204629)
+ *)
+
+val traversed : {T: Traversable} -> unit -> ('a T.t, 'b T.t, 'a, 'b) traversal
+(** `traversed` constructs a traversal which focuses on every element of a `Traversable`.
+
+    This function takes a dummy unit argument to improve type inference
+    - the limitation is explained [here](https://github.com/modular-implicits/lens/pull/6#discussion_r1297204629)
+ *)
+
+val empty : ('s, 's, 'a, 'b) traversal
+(** The empty traversal for any type, focusing on no values *)
+
+val equality : ('s, 't, 's, 't) lens
+(** Focuses on the entire data structure - the "identity" lens *)
+
+val head : ('a list, 'a) traversal'
+(** Focuses on the head (first element) of a list, or on nothing if the list is empty. *)
+
+val tail : ('a list, 'a) traversal'
+(** Focuses on the tail of a list (everything after the first element).
+    If the list is empty, this focuses on nothing.
+ *)
 
 (** Below are modules containing lenses which focus on specific elements of tuples.
     They have consistent names: to focus on the x'th element of a tuple of size y, use Ty._x
@@ -144,24 +278,6 @@ module T4: sig
 end
 (** T4 contains lenses for focusing on elements of 4-tuples *)
 
-module type Indexed = sig
-  type index
-  (** `index` is the type used to index the container - e.g. for lists, that integers *)
-
-  type value
-  (** `value` is the type inside the container *)
-
-  type t
-  (** `t` is the type of the container itself *)
-
-  val index : index -> (t, value) traversal'
-  (** `index` takes an index and returns a traversal focusing on the referenced element of a container.
-      It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
-end
-(** Indexed represents containers which use indexing to get values of the same type.
-    This includes lists, strings, maps, homogeneous tuples, etc.
- *)
-
 implicit module ListIndexed {A: Any}:
   Indexed with type index = int and type value = A.t and type t = A.t list
 (** Allows lists to be indexed.
@@ -174,9 +290,35 @@ implicit module BytesIndexed: Indexed
     Warning: doesn't work with Unicode strings - indexing is done by bytes only!
  *)
 
-val index : {I: Indexed} -> I.index -> (I.t, I.value) traversal'
-(** `index` takes an index and returns a traversal focusing on the referenced element of a container.
-    It returns a traversal instead of a lens, as it can focus on 0 items if the index does not exist in the container *)
+implicit module Tuple2Indexed {A: Any}: Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t
+(** Allows pairs (2-tuples) to be indexed. (Only indices 0 and 1 focus on anything.) *)
 
-val getOption : {A: Any} -> ('s, 's, A.t, A.t) traversal -> 's -> A.t option
-(** Gets the first item focused on by a traversal, or None if the traversal finds none. *)
+implicit module Tuple3Indexed {A: Any}: Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t * A.t
+(** Allows 3-tuples to be indexed. (Only indices 0, 1, and 2 focus on anything.) *)
+
+implicit module Tuple4Indexed {A: Any}: Indexed
+  with type index = int and type value = A.t and type t = A.t * A.t * A.t * A.t
+(** Allows 4-tuples to be indexed. (Only indices 0 to 3 focus on anything.) *)
+
+implicit module MapIndexed {M: Map.S} {V: Any}: Indexed
+  with type index = M.key and type value = V.t and type t = V.t M.t
+(** Allows Maps (from the OCaml stdlib) to be indexed using their keys.
+
+    The module returned by Map.Make must be marked `implicit` in scope for this to work,
+    unless you explicitly pass {MapIndexed {MyMap}} everywhere.
+
+    Note that due to how Indexed works, if a key does not exist in the map,
+    then setting its value will not cause it to be inserted. If you want that behaviour,
+    use `at`.
+ *)
+
+implicit module MapAt {M: Map.S} {V: Any}: At
+  with type index = M.key and type value = V.t and type t = V.t M.t
+(** Allows entries in Maps (from the OCaml stdlib) to be focused with a lens. See `At`
+    for more detail.
+
+    The module returned by Map.Make must be marked `implicit` in scope for this to work,
+    unless you explicitly pass {MapIndexed {MyMap}} everywhere.
+ *)
