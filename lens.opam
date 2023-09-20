@@ -18,6 +18,6 @@ depends: [
    "dune" {build}
    "imp"
    "ocaml-variants"
-     { = "4.02.1+modular-implicits" | = "4.02.1+modular-implicits-ber" }
+     { = "4.02.1+modular-implicits" | = "4.02.1+modular-implicits-ber" | = "4.02.1+modular-implicits_let_syntax" }
 ]
 
